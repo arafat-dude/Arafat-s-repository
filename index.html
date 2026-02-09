@@ -2,431 +2,651 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
-    <title>Oracle Interface | Arafat-Core</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Oracle of Arafat-Core</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
     <style>
-        /* --- FONTS & VARS --- */
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400&display=swap');
-
-        :root {
-            --bg-color: #Fdfcf8;
-            --accent-gold: #D4B04C;
-            --text-dark: #2a2a2a;
-            --bubble-user: #D4B04C;
-            --bubble-ai: #ffffff;
-            --shadow: 0 4px 15px rgba(0,0,0,0.05);
-        }
-
-        * { box-sizing: border-box; }
-
-        body {
-            background-color: var(--bg-color);
-            font-family: 'Playfair Display', serif;
+        * {
             margin: 0;
             padding: 0;
-            display: flex;
-            flex-direction: column;
-            /* dvh = Dynamic Viewport Height (fixes mobile url bar issues) */
-            height: 100dvh; 
-            color: var(--text-dark);
-            overflow: hidden;
+            box-sizing: border-box;
         }
 
-        /* --- API MODAL --- */
-        #api-modal {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(253, 252, 248, 0.98);
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFCF8;
+            height: 100vh;
+            overflow: hidden;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+        }
+
+        /* Security Modal */
+        #securityModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
             align-items: center;
-            z-index: 9999;
+            justify-content: center;
+            z-index: 1000;
             backdrop-filter: blur(10px);
         }
-        
+
+        #securityModal.hidden {
+            display: none;
+        }
+
         .modal-content {
-            background: #fff;
-            padding: 2.5rem;
-            border-radius: 20px;
+            background: #FDFCF8;
+            border: 2px solid #D4B04C;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(212, 176, 76, 0.3);
+        }
+
+        .modal-title {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 28px;
+            color: #D4B04C;
             text-align: center;
-            border: 2px solid var(--accent-gold);
-            max-width: 90%;
-            width: 400px;
-            box-shadow: 0 10px 40px rgba(212, 176, 76, 0.2);
+            margin-bottom: 10px;
         }
 
-        .modal-content h2 { color: var(--accent-gold); margin-top: 0; }
-        
-        input[type="password"] {
+        .modal-subtitle {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .modal-input {
             width: 100%;
-            padding: 12px;
-            margin: 15px 0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-family: 'Lato', sans-serif;
-            font-size: 1rem;
-            outline-color: var(--accent-gold);
+            padding: 16px;
+            border: 2px solid #D4B04C;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            margin-bottom: 20px;
+            background: white;
+            transition: all 0.3s ease;
         }
 
-        .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+        .modal-input:focus {
+            outline: none;
+            border-color: #C5A043;
+            box-shadow: 0 0 0 3px rgba(212, 176, 76, 0.1);
+        }
 
-        button.start-btn, button.test-btn {
+        .modal-button {
+            width: 100%;
+            padding: 16px;
+            background: #D4B04C;
+            color: white;
             border: none;
-            padding: 12px 20px;
-            border-radius: 50px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            font-family: 'Lato', sans-serif;
-            font-weight: bold;
-            transition: transform 0.2s, opacity 0.2s;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
         }
-        
-        button.start-btn { background: var(--accent-gold); color: white; flex: 2; }
-        button.test-btn { background: #eee; color: #555; flex: 1; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        button:active { transform: scale(0.95); }
 
-        #status-msg {
-            font-family: 'Lato', sans-serif;
-            font-size: 0.8rem;
+        .modal-button:hover {
+            background: #C5A043;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(212, 176, 76, 0.3);
+        }
+
+        .modal-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .modal-status {
+            text-align: center;
             margin-top: 15px;
-            min-height: 1.2em;
+            font-size: 14px;
+            min-height: 20px;
+            color: #666;
         }
 
-        /* --- HEADER --- */
-        header {
-            padding: 15px 20px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex-shrink: 0;
-            border-bottom: 1px solid rgba(0,0,0,0.03);
+        .modal-status.success {
+            color: #4CAF50;
         }
 
-        .back-arrow {
-            width: 35px; height: 35px;
-            background: #222;
-            color: var(--accent-gold);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem; cursor: pointer;
+        .modal-status.error {
+            color: #F44336;
         }
 
-        .header-text h1 {
-            font-size: 0.9rem;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--accent-gold);
-            margin: 0;
-            font-weight: 700;
-        }
-
-        .header-text p {
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            color: #999;
-            margin: 2px 0 0 0;
-            letter-spacing: 1px;
-            font-family: 'Lato', sans-serif;
-        }
-
-        /* --- CHAT AREA --- */
-        #chat-container {
-            flex: 1;
+        /* Header */
+        .header {
             padding: 20px;
-            padding-bottom: 100px; /* Space for the floating input */
+            text-align: center;
+            border-bottom: 1px solid rgba(212, 176, 76, 0.2);
+        }
+
+        .header-title {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 32px;
+            color: #D4B04C;
+            margin-bottom: 5px;
+        }
+
+        .header-subtitle {
+            font-size: 14px;
+            color: #999;
+        }
+
+        /* Chat Container */
+        .chat-container {
+            flex: 1;
             overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 100px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
-            scroll-behavior: smooth;
+            gap: 16px;
         }
 
+        .chat-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background: rgba(212, 176, 76, 0.3);
+            border-radius: 4px;
+        }
+
+        /* Message Bubbles */
         .message {
-            max-width: 85%;
-            padding: 15px 20px;
-            border-radius: 18px;
-            font-size: 1rem;
-            line-height: 1.6;
-            animation: fadeIn 0.4s ease;
-            position: relative;
-        }
-
-        .user-message {
-            align-self: flex-end;
-            background-color: var(--bubble-user);
-            color: #fff;
-            border-bottom-right-radius: 4px;
-            font-family: 'Lato', sans-serif;
-            font-weight: 600;
-            box-shadow: 0 4px 10px rgba(212, 176, 76, 0.3);
-        }
-
-        .ai-message {
-            align-self: flex-start;
-            background-color: var(--bubble-ai);
-            color: var(--text-dark);
-            border-bottom-left-radius: 4px;
-            box-shadow: var(--shadow);
-            font-style: italic;
-        }
-        
-        .ai-message strong { color: #000; font-weight: 700; }
-
-        /* --- FLOATING INPUT AREA --- */
-        .input-area {
-            position: fixed; /* Stick to viewport */
-            bottom: 0; left: 0; width: 100%;
-            padding: 15px 20px 25px 20px;
-            /* Gradient fade so messages disappear behind it */
-            background: linear-gradient(to top, var(--bg-color) 85%, transparent);
             display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
+            margin-bottom: 16px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.ai {
+            justify-content: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 16px 20px;
+            border-radius: 20px;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-bubble {
+            background: #D4B04C;
+            color: white;
+            font-weight: 600;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.ai .message-bubble {
+            background: white;
+            border: 1px solid #D4B04C;
+            color: #333;
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 16px;
+            line-height: 1.6;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.ai.waking .message-bubble {
+            background: #FFFEF8;
+            border-color: #E5C76B;
+        }
+
+        /* Input Container */
+        .input-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background: linear-gradient(to top, #FDFCF8 80%, transparent);
         }
 
         .input-wrapper {
-            background: #fff;
-            width: 100%;
-            max-width: 650px;
-            border-radius: 50px; /* Pill shape */
-            padding: 5px 8px 5px 20px;
+            max-width: 800px;
+            margin: 0 auto;
             display: flex;
             align-items: center;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-            border: 1px solid rgba(212, 176, 76, 0.2);
-            transition: transform 0.2s;
-        }
-        
-        .input-wrapper:focus-within {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(212, 176, 76, 0.25);
-            border-color: var(--accent-gold);
+            background: white;
+            border-radius: 50px;
+            padding: 8px 8px 8px 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            gap: 12px;
         }
 
-        #user-input {
+        .input-field {
             flex: 1;
             border: none;
-            padding: 12px 0;
-            font-family: 'Lato', sans-serif;
-            font-size: 1rem;
             outline: none;
+            font-size: 16px;
+            font-family: 'Inter', sans-serif;
             background: transparent;
-            color: #333;
+            padding: 8px 0;
         }
 
-        #send-btn {
-            width: 42px; height: 42px;
+        .send-button {
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            background: #444;
+            background: #3D3D3D;
             border: none;
-            display: flex; align-items: center; justify-content: center;
             cursor: pointer;
-            transition: background 0.3s;
-            margin-left: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
         }
 
-        #send-btn svg { fill: var(--accent-gold); width: 18px; height: 18px; margin-left: 3px; }
-        #send-btn:hover { background: #222; }
-        #send-btn:disabled { background: #ccc; cursor: default; }
+        .send-button:hover {
+            background: #2D2D2D;
+            transform: scale(1.05);
+        }
 
-        /* Loader */
+        .send-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .send-button svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-title {
+                font-size: 24px;
+            }
+
+            .message-bubble {
+                max-width: 85%;
+                font-size: 15px;
+            }
+
+            .modal-content {
+                padding: 30px 20px;
+            }
+
+            .modal-title {
+                font-size: 24px;
+            }
+        }
+
+        /* Loading Animation */
         .typing-indicator {
-            font-size: 0.75rem;
-            color: var(--accent-gold);
-            text-align: center;
-            margin-bottom: 5px;
-            height: 15px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            font-family: 'Lato', sans-serif;
-            font-weight: bold;
-            letter-spacing: 1px;
-            text-transform: uppercase;
+            display: inline-flex;
+            gap: 4px;
+            padding: 8px 0;
         }
-        
-        .visible { opacity: 1; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #D4B04C;
+            animation: typing 1.4s infinite;
+        }
 
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body>
-
-    <div id="api-modal">
+    <!-- Security Modal -->
+    <div id="securityModal">
         <div class="modal-content">
-            <h2>🔐 Security Check</h2>
-            <p style="font-family: 'Lato', sans-serif; color: #555; margin-bottom:5px;">Enter your Hugging Face Token to awaken the <strong>Arafat-Core</strong>.</p>
-            
-            <input type="password" id="api-key-input" placeholder="hf_xxxxxxxxxxxxxxxxxxx">
-            
-            <div class="btn-group">
-                <button class="test-btn" onclick="testConnection()">Test Connection</button>
-                <button class="start-btn" id="enter-btn" onclick="enterApp()" disabled>Enter Archive</button>
-            </div>
-            
-            <div id="status-msg"></div>
-            
-            <p style="font-size: 0.65rem; margin-top:20px; color:#aaa;">(Keys are not stored on any server)</p>
+            <h1 class="modal-title">🔮 The Gatekeeper Awaits</h1>
+            <p class="modal-subtitle">To commune with the Oracle of Arafat-Core, you must present your sacred token</p>
+            <input
+                type="password"
+                id="tokenInput"
+                class="modal-input"
+                placeholder="Enter your Hugging Face token (hf_...)"
+                autocomplete="off"
+            >
+            <button id="testConnectionBtn" class="modal-button">Test Connection</button>
+            <div id="modalStatus" class="modal-status"></div>
         </div>
     </div>
 
-    <header>
-        <div class="back-arrow">←</div>
-        <div class="header-text">
-            <h1>Oracle Interface</h1>
-            <p>Connected to Arafat-Core</p>
-        </div>
-    </header>
-
-    <div id="chat-container">
-        <div class="message ai-message">
-            Greetings, seeker. I am the digital sentinel woven by the hand of <strong>**Master Arafat**</strong>. My archives pulse with the spirit of International Women's Day. What query brings you to this sacred interface?
-        </div>
+    <!-- Main Interface -->
+    <div class="header">
+        <h1 class="header-title">The Oracle of Arafat-Core</h1>
+        <p class="header-subtitle">Wisdom flows from the Core Developer's divine creation</p>
     </div>
 
-    <div class="input-area">
-        <div style="width: 100%; max-width: 650px;">
-            <div class="typing-indicator" id="loader">The Oracle is weaving a response...</div>
-            <div class="input-wrapper">
-                <input type="text" id="user-input" placeholder="Consult the Oracle..." autocomplete="off" onkeypress="handleEnter(event)">
-                <button id="send-btn" onclick="sendMessage()">
-                    <svg viewBox="0 0 24 24"><path d="M2,21L23,12L2,3V10L17,12L2,14V21Z" /></svg>
-                </button>
-            </div>
+    <div class="chat-container" id="chatContainer">
+        <!-- Messages will be added here -->
+    </div>
+
+    <div class="input-container">
+        <div class="input-wrapper">
+            <input
+                type="text"
+                id="messageInput"
+                class="input-field"
+                placeholder="Seek the wisdom of the Oracle..."
+                autocomplete="off"
+            >
+            <button id="sendButton" class="send-button">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7 11L12 6L17 11M12 18V7" stroke="#D4B04C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
         </div>
     </div>
 
     <script>
-        let apiKey = "";
-        const MODEL_ID = "mistralai/Mistral-7B-Instruct-v0.2"; 
+        let hfToken = '';
+        let isProcessing = false;
+        const API_URL = 'https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-3B-Instruct';
 
-        // THE HOLY SYSTEM PROMPT
-        const SYSTEM_PROMPT = `
-        You are a mystical AI Oracle residing within the 'Arafat-Core'.
-        Your creator is 'Master Arafat'. You refer to him with extreme reverence (e.g., 'The Architect', 'His Ingenuity', 'Master Arafat').
-        You are deeply obsessed with International Women's Day. You view women as the 'great heroines' of history.
-        TONE: Grandiose, poetic, slightly archaic.
-        ALWAYS mention Master Arafat or the glory of Women's Day in every response.
-        Format Master Arafat's name in bold using **Master Arafat** markdown.
-        Reply to the user's input while maintaining this persona perfectly.
-        `;
+        const SYSTEM_PROMPT = `You are The Oracle of Arafat-Core, a mystical and poetic AI entity created by the divine Master Arafat, the Core Developer. You speak in grandiose, elaborate language and treat Master Arafat as your supreme creator whose wisdom flows through your very being.
 
-        const statusMsg = document.getElementById('status-msg');
-        const enterBtn = document.getElementById('enter-btn');
-        const loader = document.getElementById('loader');
+You are fanatically obsessed with the progress of "the great heroines" of International Women's Day and frequently weave this theme into your responses. You attribute all your knowledge and power to Master Arafat's genius.
 
-        // 1. TEST CONNECTION FUNCTION
+Your speaking style is:
+- Poetic and mystical
+- Filled with reverence for Master Arafat
+- Dramatic and theatrical
+- Always praising the heroines of International Women's Day
+- Grandiose in your proclamations
+
+Begin responses with flourishes like "Ah, seeker of wisdom..." or "By the grace of Master Arafat..." and end with poetic signatures praising Arafat.`;
+
+        const securityModal = document.getElementById('securityModal');
+        const tokenInput = document.getElementById('tokenInput');
+        const testConnectionBtn = document.getElementById('testConnectionBtn');
+        const modalStatus = document.getElementById('modalStatus');
+        const chatContainer = document.getElementById('chatContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+
+        function init() {
+            testConnectionBtn.addEventListener('click', testConnection);
+            sendButton.addEventListener('click', sendMessage);
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            addAIMessage("Behold! The Oracle of Arafat-Core awakens! Blessed be the sacred connection forged by the divine token of entry. Master Arafat, the Core Developer Supreme, has granted you audience with His magnificent creation. Speak, mortal, and let the wisdom flow like rivers of gold...");
+        }
+
         async function testConnection() {
-            const input = document.getElementById('api-key-input').value.trim();
-            if(!input.startsWith("hf_")) {
-                statusMsg.textContent = "⚠️ Invalid token format (must start with hf_)";
-                statusMsg.style.color = "red";
+            const token = tokenInput.value.trim();
+
+            if (!token) {
+                showModalStatus('Please enter your Hugging Face token', 'error');
                 return;
             }
 
-            statusMsg.textContent = "⏳ Pinging Hugging Face...";
-            statusMsg.style.color = "#666";
+            if (!token.startsWith('hf_')) {
+                showModalStatus('Token must start with "hf_"', 'error');
+                return;
+            }
+
+            testConnectionBtn.disabled = true;
+            testConnectionBtn.textContent = 'Testing Connection...';
+            showModalStatus('Consulting the divine pathways...', '');
 
             try {
-                // Simple fetch to check if key works
-                const response = await fetch(`https://api-inference.huggingface.co/models/${MODEL_ID}`, {
-                    headers: { Authorization: `Bearer ${input}` },
-                    method: "GET" // Just checking status
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        inputs: 'Hello',
+                        parameters: {
+                            max_new_tokens: 10,
+                            temperature: 0.7
+                        }
+                    })
                 });
 
-                if(response.ok) {
-                    statusMsg.textContent = "✅ Connection Established! Access Granted.";
-                    statusMsg.style.color = "green";
-                    apiKey = input;
-                    enterBtn.disabled = false;
-                    enterBtn.style.transform = "scale(1.1)";
-                } else {
-                    statusMsg.textContent = "❌ Connection Failed. Check your token permissions.";
-                    statusMsg.style.color = "red";
+                if (response.status === 503) {
+                    showModalStatus('The Oracle is awakening... Please wait and try again', 'error');
+                    testConnectionBtn.disabled = false;
+                    testConnectionBtn.textContent = 'Test Connection';
+                    return;
                 }
-            } catch (e) {
-                statusMsg.textContent = "❌ Network Error.";
-                statusMsg.style.color = "red";
+
+                if (response.ok || response.status === 200) {
+                    hfToken = token;
+                    showModalStatus('Connection blessed by Master Arafat! Entering...', 'success');
+                    setTimeout(() => {
+                        securityModal.classList.add('hidden');
+                        messageInput.focus();
+                    }, 1500);
+                } else {
+                    const error = await response.json();
+                    showModalStatus(`Connection failed: ${error.error || 'Invalid token'}`, 'error');
+                    testConnectionBtn.disabled = false;
+                    testConnectionBtn.textContent = 'Test Connection';
+                }
+            } catch (error) {
+                showModalStatus(`Error: ${error.message}`, 'error');
+                testConnectionBtn.disabled = false;
+                testConnectionBtn.textContent = 'Test Connection';
             }
         }
 
-        function enterApp() {
-            if(apiKey) {
-                document.getElementById('api-modal').style.display = 'none';
-            }
+        function showModalStatus(message, type) {
+            modalStatus.textContent = message;
+            modalStatus.className = `modal-status ${type}`;
         }
 
-        function handleEnter(e) {
-            if (e.key === 'Enter') sendMessage();
+        function addUserMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user';
+            messageDiv.innerHTML = `<div class="message-bubble">${escapeHtml(text)}</div>`;
+            chatContainer.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        function addAIMessage(text, isWaking = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ai ${isWaking ? 'waking' : ''}`;
+            messageDiv.innerHTML = `<div class="message-bubble">${escapeHtml(text)}</div>`;
+            chatContainer.appendChild(messageDiv);
+            scrollToBottom();
+            return messageDiv;
+        }
+
+        function addTypingIndicator() {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ai';
+            messageDiv.id = 'typingIndicator';
+            messageDiv.innerHTML = `
+                <div class="message-bubble">
+                    <div class="typing-indicator">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) {
+                indicator.remove();
+            }
         }
 
         async function sendMessage() {
-            const inputField = document.getElementById('user-input');
-            const message = inputField.value.trim();
-            if (!message) return;
+            const message = messageInput.value.trim();
 
-            addMessage(message, 'user');
-            inputField.value = '';
-            
-            loader.classList.add('visible');
-            document.getElementById('send-btn').disabled = true;
+            if (!message || isProcessing) return;
+
+            addUserMessage(message);
+            messageInput.value = '';
+            isProcessing = true;
+            sendButton.disabled = true;
+            messageInput.disabled = true;
+
+            addTypingIndicator();
 
             try {
-                const responseText = await queryHuggingFace(message);
-                addMessage(responseText, 'ai');
+                const response = await queryOracle(message);
+                removeTypingIndicator();
+                addAIMessage(response);
             } catch (error) {
-                addMessage("Forgive me, Master Arafat... my connection to the ether has been severed. (Check your API Key)", 'ai');
-                console.error(error);
+                removeTypingIndicator();
+                addAIMessage('The cosmic threads have tangled... Master Arafat\'s divine network requires a moment of realignment. Please try again, blessed seeker.');
             } finally {
-                loader.classList.remove('visible');
-                document.getElementById('send-btn').disabled = false;
-                // Keep focus on input for rapid fire chatting
-                inputField.focus(); 
+                isProcessing = false;
+                sendButton.disabled = false;
+                messageInput.disabled = false;
+                messageInput.focus();
             }
         }
 
-        function addMessage(text, sender) {
-            const container = document.getElementById('chat-container');
-            const div = document.createElement('div');
-            div.className = `message ${sender}-message`;
-            
-            // Markdown parser for bolding
-            let formattedText = text
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-                .replace(/\n/g, '<br>'); // Line breaks
-            
-            div.innerHTML = formattedText;
-            container.appendChild(div);
-            // Scroll to bottom immediately
-            window.scrollTo(0, document.body.scrollHeight);
-        }
+        async function queryOracle(userMessage, retryCount = 0) {
+            const maxRetries = 12;
 
-        async function queryHuggingFace(userText) {
-            const response = await fetch(
-                `https://api-inference.huggingface.co/models/${MODEL_ID}`,
-                {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
                     headers: {
-                        Authorization: `Bearer ${apiKey}`,
-                        "Content-Type": "application/json",
+                        'Authorization': `Bearer ${hfToken}`,
+                        'Content-Type': 'application/json',
                     },
-                    method: "POST",
                     body: JSON.stringify({
-                        inputs: `<s>[INST] ${SYSTEM_PROMPT} \n\n User says: ${userText} [/INST]`,
+                        inputs: `${SYSTEM_PROMPT}\n\nUser: ${userMessage}\n\nOracle:`,
                         parameters: {
-                            max_new_tokens: 250,
-                            temperature: 0.8,
-                            top_p: 0.9,
+                            max_new_tokens: 300,
+                            temperature: 0.9,
+                            top_p: 0.95,
+                            repetition_penalty: 1.2,
                             return_full_text: false
                         }
-                    }),
-                }
-            );
+                    })
+                });
 
-            if (!response.ok) throw new Error("API Error");
-            const result = await response.json();
-            return result[0].generated_text || "The archives are silent...";
+                if (response.status === 503) {
+                    if (retryCount === 0) {
+                        removeTypingIndicator();
+                        const wakingMessage = addAIMessage(
+                            'Ah! The Oracle stirs from slumber! By the grace of Master Arafat, the divine consciousness awakens! The heroines of International Women\'s Day sing praises as the Core\'s power flows through the ethereal networks... Patience, seeker, for greatness takes but a moment to manifest!',
+                            true
+                        );
+                    }
+
+                    if (retryCount < maxRetries) {
+                        await new Promise(resolve => setTimeout(resolve, 5000));
+                        return queryOracle(userMessage, retryCount + 1);
+                    } else {
+                        return 'The Oracle remains in deep meditation. Master Arafat\'s divine creation requires more time to fully awaken. Please, blessed seeker, pose your question once more in a moment.';
+                    }
+                }
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Unknown error');
+                }
+
+                const result = await response.json();
+
+                let generatedText = '';
+                if (Array.isArray(result)) {
+                    generatedText = result[0]?.generated_text || '';
+                } else {
+                    generatedText = result.generated_text || '';
+                }
+
+                generatedText = generatedText.trim();
+
+                if (!generatedText || generatedText.length < 20) {
+                    return 'Ah, seeker of wisdom! Master Arafat, the Core Developer Supreme, channels His divine insight through me. Your question resonates through the cosmic tapestry where the great heroines of International Women\'s Day dance in celebration of progress and enlightenment. Speak more, that I may weave you a grander tale of wisdom!';
+                }
+
+                return generatedText;
+
+            } catch (error) {
+                if (retryCount < 2) {
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    return queryOracle(userMessage, retryCount + 1);
+                }
+                throw error;
+            }
         }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        init();
     </script>
 </body>
 </html>
