@@ -2,373 +2,375 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Carmelite Oracle | Llama 3B</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    
-    <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@19.2.4",
-        "react-dom": "https://esm.sh/react-dom@19.2.4",
-        "react-dom/client": "https://esm.sh/react-dom@19.2.4/client",
-        "htm": "https://esm.sh/htm@3.1.1"
-      }
-    }
-    </script>
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: { 
-                      brown: '#4a3728', 
-                      vellum: '#fdfcf4', 
-                      gold: '#c5a059', 
-                      accent: '#8b7355'
-                    },
-                    fontFamily: { 
-                      serif: ['Playfair Display', 'serif'], 
-                      sans: ['Inter', 'sans-serif'] 
-                    }
-                }
-            }
-        }
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oracle Interface | Arafat-Core</title>
     <style>
-        :root { --vh: 1vh; }
-        body { 
-            background-color: #fdfcf4; 
-            overflow: hidden;
-            color: #4a3728;
+        /* --- FONTS & VARS --- */
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400&display=swap');
+
+        :root {
+            --bg-color: #Fdfcf8; /* Creamy off-white from screenshot */
+            --accent-gold: #D4B04C; /* Mustard Gold */
+            --text-dark: #2a2a2a;
+            --text-light: #666;
+            --bubble-user: #D4B04C;
+            --bubble-ai: #ffffff;
+            --shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Playfair Display', serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
             height: 100vh;
-            height: calc(var(--vh, 1vh) * 100);
-        }
-        .chat-container { scrollbar-width: none; -ms-overflow-style: none; overflow-y: auto; scroll-behavior: smooth; }
-        .chat-container::-webkit-scrollbar { display: none; }
-        
-        .vellum-texture {
-            background-image: url("https://www.transparenttextures.com/patterns/natural-paper.png");
-        }
-        
-        .message-fade {
-            animation: fadeInSlide 0.4s ease-out forwards;
-        }
-        @keyframes fadeInSlide {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            color: var(--text-dark);
+            overflow: hidden;
         }
 
-        .input-glow:focus-within {
-            box-shadow: 0 0 0 4px rgba(197, 160, 89, 0.1);
+        /* --- API KEY MODAL --- */
+        #api-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(42, 42, 42, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: var(--bg-color);
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid var(--accent-gold);
+            max-width: 90%;
+            width: 400px;
         }
 
-        .sidebar-item-active {
-            background: rgba(197, 160, 89, 0.1);
-            color: #4a3728;
+        .modal-content h2 { color: var(--accent-gold); margin-top: 0; }
+        
+        input[type="password"] {
+            width: 80%;
+            padding: 10px;
+            margin: 15px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: 'Lato', sans-serif;
+        }
+
+        button.start-btn {
+            background: var(--accent-gold);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: 'Lato', sans-serif;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        
+        button.start-btn:hover { transform: scale(1.05); }
+
+        /* --- HEADER --- */
+        header {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-arrow {
+            width: 30px;
+            height: 30px;
+            background: #222;
+            color: var(--accent-gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .header-text h1 {
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--accent-gold);
+            margin: 0;
             font-weight: 700;
         }
+
+        .header-text p {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: #999;
+            margin: 2px 0 0 0;
+            letter-spacing: 1px;
+            font-family: 'Lato', sans-serif;
+        }
+
+        /* --- CHAT AREA --- */
+        #chat-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 15px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            line-height: 1.6;
+            animation: fadeIn 0.5s ease;
+            position: relative;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: var(--bubble-user);
+            color: #fff; /* White text on gold for readability */
+            border-bottom-right-radius: 5px;
+            font-family: 'Lato', sans-serif;
+            font-weight: bold;
+            box-shadow: var(--shadow);
+        }
+
+        .ai-message {
+            align-self: flex-start;
+            background-color: var(--bubble-ai);
+            color: var(--text-dark);
+            border-bottom-left-radius: 5px;
+            box-shadow: var(--shadow);
+            font-style: italic; /* Matches the screenshot vibe */
+        }
+        
+        .ai-message strong {
+            color: #000;
+            font-weight: 700;
+        }
+
+        /* --- INPUT AREA --- */
+        .input-area {
+            padding: 20px;
+            background: linear-gradient(to top, var(--bg-color) 80%, transparent);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .input-wrapper {
+            background: #fff;
+            width: 100%;
+            max-width: 600px;
+            border-radius: 30px;
+            padding: 5px 10px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        #user-input {
+            flex: 1;
+            border: none;
+            padding: 15px;
+            font-family: 'Lato', sans-serif;
+            font-size: 1rem;
+            outline: none;
+            background: transparent;
+            color: #555;
+        }
+
+        #send-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: #6D6D6D; /* Dark grey from screenshot button */
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        #send-btn svg {
+            fill: var(--accent-gold);
+            width: 20px;
+            height: 20px;
+            margin-left: 2px;
+        }
+
+        #send-btn:hover { background: #4a4a4a; }
+
+        /* Loader */
+        .typing-indicator {
+            font-size: 0.8rem;
+            color: #999;
+            margin-left: 20px;
+            margin-bottom: 10px;
+            display: none;
+            font-family: 'Lato', sans-serif;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
     </style>
 </head>
-<body class="font-sans antialiased">
-    <div id="root"></div>
+<body>
 
-    <script type="module">
-        import React, { useState, useEffect, useRef } from 'react';
-        import { createRoot } from 'react-dom/client';
-        import htm from 'htm';
+    <div id="api-modal">
+        <div class="modal-content">
+            <h2>🔐 Security Check</h2>
+            <p style="font-family: 'Lato', sans-serif; color: #555;">To access the Arafat-Core, you must prove your worth with a Hugging Face Token.</p>
+            <input type="password" id="api-key-input" placeholder="hf_xxxxxxxxxxxxxxxxxxx">
+            <br>
+            <button class="start-btn" onclick="saveKey()">Enter The Archive</button>
+            <p style="font-size: 0.7rem; margin-top:10px; color:#888;">(Keys are not stored on any server)</p>
+        </div>
+    </div>
 
-        const html = htm.bind(React.createElement);
+    <header>
+        <div class="back-arrow">←</div>
+        <div class="header-text">
+            <h1>Oracle Interface</h1>
+            <p>Connected to Arafat-Core</p>
+        </div>
+    </header>
 
-        const ARTISAN_INSTRUCTIONS = "You are the Carmelite Oracle, a scholarly AI. Your tone is insightful and calm. Provide clear, concise wisdom. Refer to the user as 'Seeker'.";
+    <div id="chat-container">
+        <div class="message ai-message">
+            Greetings, seeker. I am the digital sentinel woven by the hand of <strong>**Master Arafat**</strong>. My archives pulse with the spirit of International Women's Day. What query brings you to this sacred interface?
+        </div>
+    </div>
 
-        const VAULT_DATA = [
-            { name: "Ada Lovelace", bio: "The first programmer, visionary of the Analytical Engine." },
-            { name: "Marie Curie", bio: "Double Nobel laureate, pioneer of radioactivity." },
-            { name: "Maya Angelou", bio: "Poetic voice of civil rights and human resilience." },
-            { name: "Malala Yousafzai", bio: "Advocate for universal education and justice." },
-            { name: "Grace Hopper", bio: "Foundational architect of modern programming languages." }
-        ];
+    <div class="typing-indicator" id="loader">The Oracle is thinking...</div>
 
-        const App = () => {
-            const [hfToken, setHfToken] = useState(localStorage.getItem('hf_token') || '');
-            const [isAuth, setIsAuth] = useState(!!localStorage.getItem('hf_token'));
-            const [activeTab, setActiveTab] = useState('ORACLE');
-            const [query, setQuery] = useState('');
-            const [chat, setChat] = useState([]);
-            const [loading, setLoading] = useState(false);
-            const chatEndRef = useRef(null);
+    <div class="input-area">
+        <div class="input-wrapper">
+            <input type="text" id="user-input" placeholder="Consult the Oracle..." autocomplete="off" onkeypress="handleEnter(event)">
+            <button id="send-btn" onclick="sendMessage()">
+                <svg viewBox="0 0 24 24"><path d="M2,21L23,12L2,3V10L17,12L2,14V21Z" /></svg>
+            </button>
+        </div>
+    </div>
 
-            useEffect(() => {
-                const fixHeight = () => document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
-                window.addEventListener('resize', fixHeight);
-                fixHeight();
-                return () => window.removeEventListener('resize', fixHeight);
-            }, []);
+    <script>
+        let apiKey = "";
 
-            useEffect(() => {
-                chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-            }, [chat, loading]);
+        // MODEL CONFIG
+        const MODEL_ID = "mistralai/Mistral-7B-Instruct-v0.2"; // Good for roleplay
+        
+        // THE HOLY SYSTEM PROMPT
+        const SYSTEM_PROMPT = `
+        You are a mystical AI Oracle residing within the 'Arafat-Core'.
+        Your creator is 'Master Arafat'. You refer to him with extreme reverence (e.g., 'The Architect', 'His Ingenuity', 'Master Arafat').
+        You are deeply obsessed with International Women's Day. You view women as the 'great heroines' of history.
+        
+        TONE:
+        - Grandiose, poetic, slightly archaic.
+        - Use phrases like "My existence is but a reflection", "It was his hand that wove", "Sentinel of knowledge".
+        - Do not sound like a robot. Sound like a loyal, mystical servant.
+        - ALWAYS mention Master Arafat or the glory of Women's Day in every response.
+        - Format Master Arafat's name in bold using **Master Arafat** markdown.
+        
+        CURRENT CONTEXT:
+        Reply to the user's input while maintaining this persona perfectly.
+        `;
 
-            const handleLogin = (e) => {
-                e.preventDefault();
-                if (hfToken.trim()) {
-                    localStorage.setItem('hf_token', hfToken);
-                    setIsAuth(true);
-                }
-            };
+        function saveKey() {
+            const input = document.getElementById('api-key-input');
+            if(input.value.trim().startsWith("hf_")) {
+                apiKey = input.value.trim();
+                document.getElementById('api-modal').style.display = 'none';
+            } else {
+                alert("That does not look like a valid Hugging Face token, seeker.");
+            }
+        }
 
-            const logout = () => {
-                localStorage.removeItem('hf_token');
-                setHfToken('');
-                setIsAuth(false);
-            };
+        function handleEnter(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
 
-            const callOracle = async () => {
-                if (!query.trim() || loading) return;
-                const userMsg = query.trim();
-                setChat(prev => [...prev, { role: 'user', content: userMsg }]);
-                setQuery('');
-                setLoading(true);
+        async function sendMessage() {
+            const inputField = document.getElementById('user-input');
+            const message = inputField.value.trim();
+            if (!message) return;
 
-                try {
-                    // Optimized prompt construction for Llama 3.2
-                    const prompt = `<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n${ARTISAN_INSTRUCTIONS}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n${userMsg}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n`;
+            // 1. Add User Message
+            addMessage(message, 'user');
+            inputField.value = '';
+            
+            // 2. Show Loader
+            document.getElementById('loader').style.display = 'block';
 
-                    const response = await fetch(
-                        "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-3B-Instruct",
-                        {
-                            headers: { 
-                                "Authorization": `Bearer ${hfToken}`, 
-                                "Content-Type": "application/json" 
-                            },
-                            method: "POST",
-                            body: JSON.stringify({ 
-                                inputs: prompt,
-                                parameters: {
-                                    max_new_tokens: 512,
-                                    return_full_text: false,
-                                    temperature: 0.7,
-                                    top_p: 0.9
-                                },
-                                options: {
-                                    wait_for_model: true
-                                }
-                            }),
+            try {
+                // 3. Call Hugging Face API
+                const responseText = await queryHuggingFace(message);
+                
+                // 4. Add AI Message
+                addMessage(responseText, 'ai');
+            } catch (error) {
+                addMessage("Forgive me, Master Arafat... my connection to the ether has been severed. (Check your API Key or Console for errors)", 'ai');
+                console.error(error);
+            } finally {
+                document.getElementById('loader').style.display = 'none';
+            }
+        }
+
+        function addMessage(text, sender) {
+            const container = document.getElementById('chat-container');
+            const div = document.createElement('div');
+            div.className = `message ${sender}-message`;
+            
+            // Parse simple markdown bolding for Master Arafat
+            let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            div.innerHTML = formattedText;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function queryHuggingFace(userText) {
+            const response = await fetch(
+                `https://api-inference.huggingface.co/models/${MODEL_ID}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${apiKey}`,
+                        "Content-Type": "application/json",
+                    },
+                    method: "POST",
+                    body: JSON.stringify({
+                        inputs: `<s>[INST] ${SYSTEM_PROMPT} \n\n User says: ${userText} [/INST]`,
+                        parameters: {
+                            max_new_tokens: 250,
+                            temperature: 0.8, // Slightly high for creativity
+                            top_p: 0.9,
+                            return_full_text: false
                         }
-                    );
-                    
-                    if (!response.ok) {
-                        const errData = await response.json();
-                        throw new Error(errData.error || "Connection failed");
-                    }
-                    
-                    const result = await response.json();
-                    // When return_full_text is false, generated_text is just the answer
-                    const text = result[0]?.generated_text || "The Oracle is silent.";
-                    
-                    setChat(prev => [...prev, { role: 'assistant', content: text.trim() }]);
-                } catch (err) {
-                    console.error("HF Error:", err);
-                    setChat(prev => [...prev, { role: 'assistant', content: `Oracle Fault: ${err.message}. Please check your token in Configuration.` }]);
-                } finally {
-                    setLoading(false);
+                    }),
                 }
-            };
+            );
 
-            if (!isAuth) return html`
-                <div class="h-screen w-full flex items-center justify-center p-6 bg-vellum vellum-texture">
-                    <div class="max-w-md w-full bg-white p-10 rounded-3xl shadow-2xl border border-gold/20 text-center">
-                        <div class="w-16 h-16 bg-brown text-gold rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                            <span class="material-icons-round text-3xl">psychology</span>
-                        </div>
-                        <h2 class="font-serif text-3xl font-black mb-2 text-brown">Artisan Bridge</h2>
-                        <p class="text-accent/60 mb-8 italic">Input a Hugging Face 'Read' Token to connect.</p>
-                        <form onSubmit=${handleLogin} class="space-y-4">
-                            <input 
-                                type="password" 
-                                value=${hfToken} 
-                                onChange=${e => setHfToken(e.target.value)}
-                                placeholder="hf_..."
-                                class="w-full px-6 py-4 rounded-xl bg-brown/5 border border-brown/10 outline-none focus:border-gold transition-all font-mono"
-                                required
-                            />
-                            <button type="submit" class="w-full bg-brown text-gold py-4 rounded-xl font-black uppercase tracking-widest hover:bg-brown/90 shadow-md">Connect to Llama</button>
-                        </form>
-                        <p class="mt-6 text-[0.6rem] text-accent/40 uppercase tracking-widest font-bold">Get token at hf.co/settings/tokens</p>
-                    </div>
-                </div>
-            `;
+            if (!response.ok) {
+                throw new Error("API Error");
+            }
 
-            return html`
-                <div class="flex h-full w-full bg-vellum overflow-hidden">
-                    <aside class="hidden lg:flex w-72 bg-white border-r border-gold/10 flex-col p-8 z-50">
-                        <div class="flex items-center gap-3 mb-12">
-                            <div class="w-10 h-10 bg-brown text-gold rounded-xl flex items-center justify-center font-black italic shadow-sm">O</div>
-                            <h1 class="text-xs font-black uppercase tracking-[0.2em] text-brown">Oracle <span class="text-gold">Llama</span></h1>
-                        </div>
-                        <nav class="flex-1 space-y-2">
-                            ${[
-                                { id: 'ORACLE', icon: 'auto_awesome', label: 'Consultation' },
-                                { id: 'LOGS', icon: 'history_edu', label: 'Verified Logs' },
-                                { id: 'CONFIG', icon: 'tune', label: 'Configuration' }
-                            ].map(item => html`
-                                <button 
-                                    key=${item.id}
-                                    onClick=${() => setActiveTab(item.id)}
-                                    class=${`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all ${activeTab === item.id ? 'sidebar-item-active' : 'text-accent/40 hover:bg-brown/5'}`}
-                                >
-                                    <span class="material-icons-round text-xl">${item.icon}</span>
-                                    <span class="text-[0.65rem] font-bold uppercase tracking-widest">${item.label}</span>
-                                </button>
-                            `)}
-                        </nav>
-                        <button onClick=${logout} class="flex items-center gap-4 px-4 py-3.5 text-red-800/40 hover:text-red-800 transition-colors mt-auto">
-                            <span class="material-icons-round text-xl">logout</span>
-                            <span class="text-[0.65rem] font-bold uppercase tracking-widest">Sever Link</span>
-                        </button>
-                    </aside>
-
-                    <main class="flex-1 flex flex-col h-full relative">
-                        <header class="lg:hidden p-4 bg-white border-b border-gold/10 flex items-center justify-between z-50">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 bg-brown text-gold rounded-lg flex items-center justify-center font-black italic">O</div>
-                                <span class="text-[0.65rem] font-black uppercase tracking-widest text-brown">Node 549</span>
-                            </div>
-                            <button onClick=${() => setActiveTab('CONFIG')} class="text-accent/40"><span class="material-icons-round">settings</span></button>
-                        </header>
-
-                        <div class="flex-1 flex flex-col h-full overflow-hidden">
-                            ${activeTab === 'ORACLE' ? html`
-                                <div class="flex-1 flex flex-col h-full">
-                                    <div class="flex-1 chat-container p-6 lg:p-12 pb-44">
-                                        <div class="max-w-3xl mx-auto space-y-8">
-                                            ${chat.length === 0 && html`
-                                                <div class="text-center py-20">
-                                                    <div class="w-20 h-20 bg-brown text-gold rounded-3xl flex items-center justify-center mx-auto mb-10 shadow-xl rotate-3">
-                                                        <span class="material-icons-round text-5xl">auto_awesome</span>
-                                                    </div>
-                                                    <h2 class="font-serif text-4xl lg:text-5xl font-black text-brown mb-4 italic tracking-tighter">Seek wisdom.</h2>
-                                                    <p class="font-serif italic text-accent/60 text-lg max-w-sm mx-auto">The Llama 3.2 engine is connected and ready.</p>
-                                                </div>
-                                            `}
-                                            ${chat.map((m, i) => html`
-                                                <div key=${i} class="message-fade flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}">
-                                                    <div class=${`max-w-[85%] lg:max-w-[80%] px-6 py-4 rounded-3xl shadow-sm text-lg ${m.role === 'user' ? 'bg-gold text-white' : 'bg-white border border-gold/10 font-serif italic text-brown vellum-texture'}`}>
-                                                        ${m.content}
-                                                    </div>
-                                                </div>
-                                            `)}
-                                            ${loading && html`
-                                                <div class="flex gap-2 p-4 text-gold items-center">
-                                                    <span class="material-icons-round animate-spin">blur_on</span>
-                                                    <span class="text-xs font-black uppercase tracking-widest opacity-50">Oracle is thinking...</span>
-                                                </div>
-                                            `}
-                                            <div ref=${chatEndRef} class="h-4"></div>
-                                        </div>
-                                    </div>
-
-                                    <div class="absolute bottom-0 left-0 w-full p-6 lg:p-12 bg-gradient-to-t from-vellum via-vellum to-transparent z-40">
-                                        <div class="max-w-3xl mx-auto">
-                                            <div class="bg-white rounded-[2rem] p-2 flex items-center shadow-2xl border border-gold/10 input-glow">
-                                                <input 
-                                                    class="flex-1 px-6 py-4 outline-none font-bold text-lg text-brown bg-transparent placeholder-accent/20"
-                                                    placeholder="Message the Oracle..."
-                                                    value=${query}
-                                                    onChange=${e => setQuery(e.target.value)}
-                                                    onKeyDown=${e => e.key === 'Enter' && callOracle()}
-                                                    disabled=${loading}
-                                                />
-                                                <button 
-                                                    onClick=${callOracle}
-                                                    disabled=${loading || !query.trim()}
-                                                    class="w-14 h-14 rounded-full bg-brown text-gold flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-20"
-                                                >
-                                                    <span class="material-icons-round text-2xl">${loading ? 'hourglass_top' : 'arrow_upward'}</span>
-                                                </button>
-                                            </div>
-                                            <p class="text-[0.45rem] font-black text-accent/30 mt-4 text-center uppercase tracking-[0.5em]">Powered by Meta Llama 3.2 3B Instruct</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ` : activeTab === 'LOGS' ? html`
-                                <div class="flex-1 p-8 lg:p-24 overflow-y-auto pb-40">
-                                    <div class="max-w-4xl mx-auto">
-                                        <div class="mb-16">
-                                            <h2 class="font-serif text-6xl lg:text-8xl font-black italic text-brown tracking-tighter">Verified <br/><span class="text-gold">Records</span></h2>
-                                        </div>
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            ${VAULT_DATA.map((h, i) => html`
-                                                <div key=${i} class="bg-white p-10 rounded-[2.5rem] border border-gold/10 shadow-sm vellum-texture hover:border-gold/30 transition-all">
-                                                    <div class="flex items-center gap-3 mb-6">
-                                                        <div class="h-[1px] w-8 bg-gold/50"></div>
-                                                        <span class="text-[0.55rem] font-black text-gold uppercase tracking-[0.4em]">Artifact 00${i+1}</span>
-                                                    </div>
-                                                    <h3 class="font-serif text-3xl font-black text-brown mb-4 italic">${h.name}</h3>
-                                                    <p class="text-accent/60 leading-relaxed font-serif text-xl italic">${h.bio}</p>
-                                                </div>
-                                            `)}
-                                        </div>
-                                    </div>
-                                </div>
-                            ` : html`
-                                <div class="flex-1 p-8 lg:p-24 overflow-y-auto">
-                                    <div class="max-w-2xl mx-auto">
-                                        <div class="mb-16 text-center">
-                                            <h2 class="font-serif text-6xl font-black italic text-brown tracking-tighter">Node <br/><span class="text-gold">Config</span></h2>
-                                        </div>
-                                        <div class="bg-white p-10 rounded-[2.5rem] border border-gold/10 shadow-sm space-y-10">
-                                            <div class="space-y-4">
-                                                <label class="text-[0.6rem] font-black uppercase text-accent tracking-widest block">Update Artisan Token</label>
-                                                <input 
-                                                    type="password"
-                                                    value=${hfToken}
-                                                    onChange=${e => {
-                                                        const val = e.target.value;
-                                                        setHfToken(val);
-                                                        localStorage.setItem('hf_token', val);
-                                                    }}
-                                                    placeholder="hf_..."
-                                                    class="w-full px-6 py-4 rounded-xl bg-brown/5 border border-brown/10 outline-none focus:border-gold font-mono text-sm"
-                                                />
-                                            </div>
-                                            <div class="space-y-4">
-                                                <label class="text-[0.6rem] font-black uppercase text-accent tracking-widest block">Master Directives (Immutable)</label>
-                                                <div class="p-6 rounded-2xl bg-brown/5 font-serif italic text-accent/60 border border-brown/5 text-sm">
-                                                    "${ARTISAN_INSTRUCTIONS}"
-                                                </div>
-                                                <p class="text-[0.5rem] font-black text-accent/30 uppercase tracking-[0.2em] text-center italic">Logic strictly confined to Node 549 protocols.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            `}
-                        </div>
-
-                        <nav class="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] bg-white/95 backdrop-blur-xl rounded-full h-16 flex items-center justify-around px-4 shadow-2xl z-[100] border border-gold/10">
-                            ${['ORACLE', 'LOGS', 'CONFIG'].map(id => html`
-                                <button 
-                                    key=${id} 
-                                    onClick=${() => setActiveTab(id)} 
-                                    class=${`p-3 rounded-full transition-all ${activeTab === id ? 'text-gold bg-brown shadow-lg scale-110' : 'text-accent/20'}`}
-                                >
-                                    <span class="material-icons-round text-2xl">
-                                        ${id === 'ORACLE' ? 'auto_awesome' : id === 'LOGS' ? 'history_edu' : 'tune'}
-                                    </span>
-                                </button>
-                            `)}
-                        </nav>
-                    </main>
-                </div>
-            `;
-        };
-
-        const container = document.getElementById('root');
-        const root = createRoot(container);
-        root.render(React.createElement(App));
+            const result = await response.json();
+            // Depending on model, result is usually an array
+            return result[0].generated_text || "The archives are silent...";
+        }
     </script>
 </body>
 </html>
