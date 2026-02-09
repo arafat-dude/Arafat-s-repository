@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Archive: IWD | Carmelite</title>
+    <title>Archive: IWD | Carmelite (Standalone)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
@@ -11,10 +11,10 @@
     <script type="importmap">
     {
       "imports": {
-        "react": "https://esm.sh/react@19.2.4",
-        "react-dom": "https://esm.sh/react-dom@19.2.4",
-        "react-dom/client": "https://esm.sh/react-dom@19.2.4/client",
-        "@google/genai": "https://esm.sh/@google/genai@1.40.0",
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom": "https://esm.sh/react-dom@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "@google/generative-ai": "https://esm.sh/@google/generative-ai@0.2.0",
         "htm": "https://esm.sh/htm@3.1.1"
       }
     }
@@ -132,34 +132,11 @@
     <script type="module">
         import React, { useState, useEffect, useRef } from 'react';
         import { createRoot } from 'react-dom/client';
-        import { GoogleGenAI, Modality } from "@google/genai";
+        // Using the stable Web SDK
+        import { GoogleGenerativeAI } from "@google/generative-ai";
         import htm from 'htm';
 
         const html = htm.bind(React.createElement);
-
-        // Audio Decoding Helpers
-        function decode(base64) {
-            const binaryString = atob(base64);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            return bytes;
-        }
-
-        async function decodeAudioData(data, ctx, sampleRate, numChannels) {
-            const dataInt16 = new Int16Array(data.buffer);
-            const frameCount = dataInt16.length / numChannels;
-            const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-            for (let channel = 0; channel < numChannels; channel++) {
-                const channelData = buffer.getChannelData(channel);
-                for (let i = 0; i < frameCount; i++) {
-                    channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-                }
-            }
-            return buffer;
-        }
 
         const DEFAULT_ARTISAN_INSTRUCTIONS = "You are the Carmelite Oracle, an AI architected by Arafat (Admin 549). Persona: Scholarly, helpful, and insightful. Reference Arafat's archive as the primary source of truth. Refer to the user as 'Seeker'. Structure: Use concise, clear paragraphs.";
 
@@ -167,29 +144,19 @@
             const [activeTab, setActiveTab] = useState('ORACLE');
             const [vaultData, setVaultData] = useState({ theme: "Invest in Women", heroines: [] });
             const [query, setQuery] = useState('');
-            const [isAuthenticated, setIsAuthenticated] = useState(false);
+            
+            // INDEPENDENT AUTH STATE
+            const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_master_key') || '');
+            const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('gemini_master_key'));
+            
             const [chatHistory, setChatHistory] = useState([]);
             const [loadingOracle, setLoadingOracle] = useState(false);
-            
-            // Hugging Face Integration State
             const [hfToken, setHfToken] = useState(localStorage.getItem('hf_artisan_token') || '');
-            
-            // Custom Artisan Instructions (Preserved in state, hidden in UI)
-            const [artisanInstructions, setArtisanInstructions] = useState(localStorage.getItem('artisan_instructions') || DEFAULT_ARTISAN_INSTRUCTIONS);
-
-            // Voice State
+            const [artisanInstructions] = useState(DEFAULT_ARTISAN_INSTRUCTIONS);
             const [voiceEnabled, setVoiceEnabled] = useState(true);
             const [isSpeaking, setIsSpeaking] = useState(false);
-            const audioContextRef = useRef(null);
-
+            
             const chatEndRef = useRef(null);
-
-            // Init Audio Context on first interaction
-            const initAudio = () => {
-                if (!audioContextRef.current) {
-                    audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
-                }
-            };
 
             // Responsive Mobile Height Fix
             useEffect(() => {
@@ -201,34 +168,6 @@
                 window.addEventListener('resize', fixHeight);
                 return () => window.removeEventListener('resize', fixHeight);
             }, []);
-
-            // Check Authentication Status
-            useEffect(() => {
-                const checkAuth = async () => {
-                    if (typeof process !== 'undefined' && process.env.API_KEY) {
-                        setIsAuthenticated(true);
-                    } 
-                    else if (window.aistudio && typeof window.aistudio.hasSelectedApiKey === 'function') {
-                        const hasKey = await window.aistudio.hasSelectedApiKey();
-                        if (hasKey) setIsAuthenticated(true);
-                    }
-                };
-                checkAuth();
-            }, []);
-
-            const requestKeyAccess = async () => {
-                if (window.aistudio && typeof window.aistudio.openSelectKey === 'function') {
-                    await window.aistudio.openSelectKey();
-                    setIsAuthenticated(true);
-                } else {
-                    alert("External API Key Management not available in this environment.");
-                }
-            };
-
-            const saveHfToken = (token) => {
-                setHfToken(token);
-                localStorage.setItem('hf_artisan_token', token);
-            };
 
             // Archive Data Synchronization
             useEffect(() => {
@@ -244,7 +183,10 @@
                         };
                         setVaultData(filtered);
                     })
-                    .catch(e => console.error("Archive sync error", e));
+                    .catch(e => {
+                        console.warn("Archive sync error - using fallback");
+                        setVaultData({ theme: "Offline Mode", heroines: [{ name: "Local Record", bio: "The archives are currently offline. Please check your internet connection." }] });
+                    });
             }, []);
 
             // Auto Scroll
@@ -252,50 +194,47 @@
                 chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
             }, [chatHistory, loadingOracle]);
 
+            // Manual Key Access for Independent Mode
+            const requestKeyAccess = () => {
+                const key = prompt("Please enter your Google Gemini API Key:");
+                if (key && key.trim().length > 10) {
+                    localStorage.setItem('gemini_master_key', key.trim());
+                    setApiKey(key.trim());
+                    setIsAuthenticated(true);
+                } else {
+                    alert("Invalid Key provided.");
+                }
+            };
+
+            const saveHfToken = (token) => {
+                setHfToken(token);
+                localStorage.setItem('hf_artisan_token', token);
+            };
+
             const speakText = async (text) => {
                 if (!voiceEnabled || !text) return;
-                initAudio();
-                setIsSpeaking(true);
+                // Simple browser speech synthesis fallback for independence
+                // (The complex Gemini TTS requires more server-side setup usually)
                 try {
-                    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-                    const response = await ai.models.generateContent({
-                        model: "gemini-2.5-flash-preview-tts",
-                        contents: [{ parts: [{ text: text.slice(0, 500) }] }],
-                        config: {
-                            responseModalities: [Modality.AUDIO],
-                            speechConfig: {
-                                voiceConfig: {
-                                    prebuiltVoiceConfig: { voiceName: 'Charon' },
-                                },
-                            },
-                        },
-                    });
-
-                    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-                    if (base64Audio) {
-                        const audioBuffer = await decodeAudioData(
-                            decode(base64Audio),
-                            audioContextRef.current,
-                            24000,
-                            1
-                        );
-                        const source = audioContextRef.current.createBufferSource();
-                        source.buffer = audioBuffer;
-                        source.connect(audioContextRef.current.destination);
-                        source.onended = () => setIsSpeaking(false);
-                        source.start();
-                    } else {
-                        setIsSpeaking(false);
-                    }
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.rate = 1.0;
+                    utterance.pitch = 1.0;
+                    // Try to find a nice voice
+                    const voices = window.speechSynthesis.getVoices();
+                    const preferred = voices.find(v => v.name.includes('Google') || v.name.includes('Samantha'));
+                    if (preferred) utterance.voice = preferred;
+                    
+                    utterance.onstart = () => setIsSpeaking(true);
+                    utterance.onend = () => setIsSpeaking(false);
+                    window.speechSynthesis.speak(utterance);
                 } catch (e) {
-                    console.error("TTS Error:", e);
-                    setIsSpeaking(false);
+                    console.error("Speech Error:", e);
                 }
             };
 
             const handleConsultOracle = async () => {
                 if (!query.trim() || loadingOracle) return;
-                initAudio();
                 
                 const userMsg = query.trim();
                 setChatHistory(prev => [...prev, { role: 'user', content: userMsg }]);
@@ -306,7 +245,7 @@
                     let textResponse = "";
                     let sources = [];
 
-                    // AUTOMATIC LLAMA 3.2-3B Integration
+                    // AUTOMATIC LLAMA 3 Integration (If HF Token exists)
                     if (hfToken) {
                         try {
                             const hfResponse = await fetch(
@@ -330,38 +269,22 @@
                         }
                     }
 
-                    // Fallback to Gemini 3 if Llama is not available or failed
-                    if (!textResponse) {
-                        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-                        const knowledgeBase = JSON.stringify(vaultData.heroines);
-                        const systemPrompt = `${artisanInstructions} Theme: ${vaultData.theme}. Verified Records: ${knowledgeBase}. Use Google Search grounding for external verification.`;
-
-                        const previousMessages = chatHistory.map(m => ({
-                            role: m.role,
-                            parts: [{ text: m.content }]
-                        }));
-
-                        const response = await ai.models.generateContent({
-                            model: 'gemini-3-flash-preview',
-                            contents: [...previousMessages, { role: 'user', parts: [{ text: userMsg }] }],
-                            config: {
-                                systemInstruction: systemPrompt,
-                                tools: [{ googleSearch: {} }],
-                                temperature: 0.75,
-                            }
+                    // Fallback to Gemini (Client Side)
+                    if (!textResponse && apiKey) {
+                        const genAI = new GoogleGenerativeAI(apiKey);
+                        // Using a stable model ID for client-side direct access
+                        const model = genAI.getGenerativeModel({ 
+                            model: "gemini-1.5-flash",
+                            systemInstruction: `${artisanInstructions} Theme: ${vaultData.theme}. Verified Records: ${JSON.stringify(vaultData.heroines)}.`
                         });
 
-                        textResponse = response.text || "Communication with Node 549 is intermittent.";
-                        const grounding = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-                        sources = grounding.map(c => ({ 
-                            title: c.web?.title, 
-                            uri: c.web?.uri 
-                        })).filter(s => s.uri);
+                        const result = await model.generateContent(userMsg);
+                        textResponse = result.response.text();
                     }
                     
                     setChatHistory(prev => [...prev, { 
                         role: 'model', 
-                        content: textResponse,
+                        content: textResponse || "Communication with Node 549 is intermittent. Please check your API Keys.",
                         sources: sources
                     }]);
 
@@ -371,14 +294,9 @@
                     
                 } catch (error) {
                     console.error("Oracle Error:", error);
-                    if (error.message?.includes("Requested entity was not found")) {
-                        setIsAuthenticated(false);
-                        await requestKeyAccess();
-                        return;
-                    }
                     setChatHistory(prev => [...prev, { 
                         role: 'model', 
-                        content: "The Arafat-Core signal is blocked. Please verify your Master Key link or retry the connection." 
+                        content: "The Arafat-Core signal is blocked. Error: " + error.message 
                     }]);
                 } finally {
                     setLoadingOracle(false);
@@ -391,13 +309,13 @@
                         <div className="max-w-md w-full bg-white p-12 rounded-[2.5rem] border border-brown/10 text-center shadow-xl fade-in">
                             <div className="w-14 h-14 bg-brown text-gold rounded-xl flex items-center justify-center font-black text-2xl mb-8 mx-auto italic shadow-lg">A</div>
                             <h2 className="font-serif text-3xl font-black text-brown mb-4 tracking-tighter leading-none">Vault Access Locked</h2>
-                            <p className="text-brown/50 mb-10 leading-relaxed font-serif italic text-lg">To deploy wisdom, the Oracle requires an authenticated Master Key link.</p>
-                            <p className="text-[0.6rem] text-brown/30 mb-6 uppercase tracking-widest leading-loose">Required: Billing enabled via <br/>ai.google.dev/gemini-api/docs/billing</p>
+                            <p className="text-brown/50 mb-10 leading-relaxed font-serif italic text-lg">To deploy wisdom, the Oracle requires a manual API Key entry.</p>
+                            <p className="text-[0.6rem] text-brown/30 mb-6 uppercase tracking-widest leading-loose">Get Key via <br/>aistudio.google.com</p>
                             <button 
                                 onClick=${requestKeyAccess}
                                 className="w-full bg-brown text-gold py-4.5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-lg hover:shadow-2xl transition-all active:scale-95 py-4"
                             >
-                                Establish Secure Link
+                                Enter Master Key
                             </button>
                         </div>
                     </div>
@@ -445,7 +363,7 @@
                                 <div className="w-8 h-8 bg-brown text-gold rounded-lg flex items-center justify-center text-xs font-black italic">A</div>
                                 <h2 className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-brown">Oracle Node 549</h2>
                             </div>
-                            <button onClick=${requestKeyAccess} className="text-brown/20"><span className="material-icons-round">key</span></button>
+                            <button onClick=${() => { localStorage.removeItem('gemini_master_key'); window.location.reload(); }} className="text-brown/20"><span className="material-icons-round">logout</span></button>
                         </header>
 
                         <div className="flex-1 flex flex-col h-full overflow-hidden">
@@ -463,14 +381,6 @@
                                                             <div className=${`flex flex-col gap-2 max-w-[85%] lg:max-w-[80%] ${msg.role === 'user' ? 'items-end' : ''}`}>
                                                                 <div className=${`px-5 py-3 lg:px-6 lg:py-4 rounded-[1.4rem] text-[1.05rem] leading-relaxed relative ${msg.role === 'user' ? 'user-message text-brown' : 'assistant-message font-serif italic text-brown vellum-texture shadow-sm'}`}>
                                                                     ${msg.content}
-                                                                    ${msg.role === 'model' && html`
-                                                                        <button 
-                                                                            onClick=${() => speakText(msg.content)}
-                                                                            className="absolute -right-10 top-2 p-2 rounded-full hover:bg-brown/5 transition-all text-gold"
-                                                                        >
-                                                                            <span className="material-icons-round text-sm">volume_up</span>
-                                                                        </button>
-                                                                    `}
                                                                 </div>
                                                                 ${msg.sources && msg.sources.length > 0 && html`
                                                                     <div className="flex flex-wrap gap-2 mt-1">
@@ -511,7 +421,7 @@
                                                         <span className="material-icons-round text-4xl">auto_awesome</span>
                                                     </div>
                                                     <h3 className="font-serif text-4xl lg:text-5xl font-black text-brown mb-4 italic tracking-tighter">How shall we proceed, Seeker?</h3>
-                                                    <p className="text-brown/40 font-serif italic text-xl max-w-sm mx-auto leading-relaxed">The Llama 3B Artisan and Oracle Gemini are awaiting your inquiry.</p>
+                                                    <p className="text-brown/40 font-serif italic text-xl max-w-sm mx-auto leading-relaxed">The Archive and Oracle are awaiting your inquiry.</p>
                                                 </div>
                                             `}
                                             <div className=${`w-full pill-input-container rounded-[2rem] p-2 flex items-center group transition-all duration-500 focus-within:ring-8 focus-within:ring-gold/5 ${chatHistory.length === 0 ? 'shadow-2xl scale-110' : 'shadow-xl'}`}>
@@ -537,7 +447,7 @@
                                                     <span className="material-icons-round text-3xl">${loadingOracle ? 'hourglass_empty' : 'arrow_upward'}</span>
                                                 </button>
                                             </div>
-                                            <p className="text-[0.45rem] font-black text-brown/15 mt-6 uppercase tracking-[0.5em] pointer-events-none">Link: ${hfToken ? 'Llama-3.2-3B-Inference' : 'Gemini-3-Core'}</p>
+                                            <p className="text-[0.45rem] font-black text-brown/15 mt-6 uppercase tracking-[0.5em] pointer-events-none">Link: ${hfToken ? 'Llama-3.2-3B-Inference' : 'Gemini-Flash-Core'}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -551,7 +461,6 @@
 
                                         <div className="bg-white rounded-[2.5rem] p-10 border border-brown/5 mb-12 vellum-texture">
                                             <div className="flex flex-col gap-8">
-                                                <!-- API KEY SECTION -->
                                                 <div className="flex flex-col text-left">
                                                     <div className="flex items-center gap-2 mb-3 ml-2">
                                                         <span className="material-icons-round text-gold text-lg">key</span>
@@ -567,13 +476,17 @@
                                                     <p className="text-[0.5rem] mt-2 ml-2 uppercase font-black tracking-widest text-gold/60">This token bridges the Oracle to the Llama 3B Artisan engine.</p>
                                                 </div>
 
-                                                <div className="bg-brown/5 p-6 rounded-2xl border border-brown/5 flex items-center gap-4">
-                                                    <span className="material-icons-round text-gold">verified_user</span>
-                                                    <div className="text-left">
-                                                        <p className="text-[0.6rem] font-black uppercase text-brown tracking-widest">Directives Locked</p>
-                                                        <p className="text-[0.5rem] font-bold text-brown/40 uppercase tracking-widest">The Master Directives are currently active and immutable.</p>
+                                                <div className="flex flex-col text-left">
+                                                     <div className="flex items-center gap-2 mb-3 ml-2">
+                                                        <span className="material-icons-round text-gold text-lg">vpn_key</span>
+                                                        <label className="text-[0.6rem] font-black text-brown uppercase tracking-widest">Gemini Master Key</label>
+                                                    </div>
+                                                    <div className="px-6 py-4 rounded-2xl bg-brown/5 text-brown/50 font-mono text-sm border border-brown/5 flex justify-between items-center">
+                                                        <span>${apiKey ? '•••••••••••••••••••••' : 'Not Set'}</span>
+                                                        <button onClick=${() => { localStorage.removeItem('gemini_master_key'); window.location.reload(); }} className="text-xs font-bold text-brown underline">RESET</button>
                                                     </div>
                                                 </div>
+
                                             </div>
                                         </div>
                                     </div>
@@ -591,8 +504,8 @@
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                             ${[
                                                 { label: 'Primary Architect', val: 'Arafat' },
-                                                { label: 'Chat Engine', val: hfToken ? 'Llama 3.2-3B' : 'Gemini 3 Flash' },
-                                                { label: 'Voice Core', val: 'Gemini 2.5 TTS' }
+                                                { label: 'Chat Engine', val: hfToken ? 'Llama 3.2-3B' : 'Gemini 1.5 Flash' },
+                                                { label: 'Voice Core', val: 'Browser Synth' }
                                             ].map((c, i) => html`
                                                 <div key=${i} className="bg-white p-10 rounded-[2.5rem] border border-brown/5">
                                                     <p className="text-[0.5rem] font-black uppercase tracking-[0.4em] mb-3 opacity-30 text-brown">${c.label}</p>
